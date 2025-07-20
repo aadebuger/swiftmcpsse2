@@ -402,7 +402,7 @@ import Logging
         }
 
         /// Constructs a message URL from a path or absolute URL
-        private func constructMessageURL(from path: String) -> URL? {
+        private func constructMessageURL_old(from path: String) -> URL? {
             // Handle absolute URLs
             if path.starts(with: "http://") || path.starts(with: "https://") {
                 return URL(string: path)
@@ -417,6 +417,37 @@ import Logging
             // For relative paths, preserve the scheme, host, and port
             let pathToUse = path.starts(with: "/") ? path : "/\(path)"
             components.path = pathToUse
+            return components.url
+        }
+               /// Constructs a message URL from a path or absolute URL
+        private func constructMessageURL(from path: String) -> URL? {
+            // 处理包含查询参数的路径
+            if let baseURL = URL(string: endpoint.absoluteString),
+               let fullURL = URL(string: path, relativeTo: baseURL) {
+                return fullURL
+            }
+            
+            // 处理绝对URL
+            if let absoluteURL = URL(string: path) {
+                return absoluteURL
+            }
+            
+            // 处理相对路径
+            guard var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: true) else {
+                return nil
+            }
+            
+            // 分离路径和查询参数
+            if let queryStartIndex = path.firstIndex(of: "?") {
+                let pathComponent = String(path[..<queryStartIndex])
+                let queryComponent = String(path[path.index(after: queryStartIndex)...])
+                
+                components.path = pathComponent
+                components.query = queryComponent
+            } else {
+                components.path = path
+            }
+            
             return components.url
         }
     }
